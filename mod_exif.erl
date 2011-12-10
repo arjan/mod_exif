@@ -48,6 +48,7 @@ exif_augment_rsc(Id, Medium, Context) ->
     CreatedProp = case proplists:get_value("Date and Time (Original)", Exif) of
                       undefined -> [];
                       B ->
+                          ?zDebug(FN ++ " created on " ++ B, Context),
                           [Date,Time] = string:tokens(B, " "),
                           [Y,M,D] = string:tokens(Date, ":"),
                           [{date_start, z_convert:to_datetime(Y++"-"++M++"-"++D++" "++Time)}]
