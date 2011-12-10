@@ -41,16 +41,19 @@ exif_augment_rsc(Id, Medium, Context) ->
     FN = filename:join(
            z_path:media_archive(Context),
            proplists:get_value(filename, Medium)),
-    Output = os:cmd("exiftool -j " ++ z_utils:os_escape(FN)),
-    [JSON] = z_convert:convert_json(mochijson2:decode(Output)),
-    CreatedProp = case proplists:get_value('CreateDate', JSON) of
+    Output = os:cmd("exif -m " ++ z_utils:os_escape(FN)),
+
+    Exif = [list_to_tuple(string:tokens(L, "\t")) || L <- string:tokens(Output, "\n")],
+
+    CreatedProp = case proplists:get_value("Date and Time (Original)", Exif) of
                       undefined -> [];
-                      B when is_binary(B) ->
-                          [Date,Time] = string:tokens(binary_to_list(B), " "),
+                      B ->
+                          [Date,Time] = string:tokens(B, " "),
                           [Y,M,D] = string:tokens(Date, ":"),
                           [{date_start, z_convert:to_datetime(Y++"-"++M++"-"++D++" "++Time)}]
                   end,
-    Props = [{exif, JSON}] ++ CreatedProp,
+
+    Props = [{exif, Exif}] ++ CreatedProp,
     m_rsc:update(Id, Props, Context),
     ok.
 
