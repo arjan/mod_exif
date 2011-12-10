@@ -29,7 +29,8 @@
 
 -export([
          observe_media_replace_file/2,
-         exif_augment_rsc/3
+         exif_augment_rsc/3,
+         event/2
         ]).
 
 
@@ -42,11 +43,23 @@ exif_augment_rsc(Id, Medium, Context) ->
            proplists:get_value(filename, Medium)),
     Output = os:cmd("exiftool -j " ++ z_utils:os_escape(FN)),
     [JSON] = z_convert:convert_json(mochijson2:decode(Output)),
-    TS = binary_to_list(proplists:get_value('DateTimeCreated', JSON)),
-    [Date,Time] = string:tokens(TS, " "),
-    ?DEBUG(Date),
-    [Y,M,D] = string:tokens(Date, ":"),
-    Created = z_convert:to_datetime(Y++"-"++M++"-"++D++" "++Time),
-    Props = [{exif, JSON},
-             {date_start, Created}],
+    CreatedProp = case proplists:get_value('DateTimeCreated', JSON) of
+                      undefined -> [];
+                      B when is_binary(B) ->
+                          [Date,Time] = string:tokens(binary_to_list(B), " "),
+                          [Y,M,D] = string:tokens(Date, ":"),
+                          [{date_start, z_convert:to_datetime(Y++"-"++M++"-"++D++" "++Time)}]
+                  end,
+    Props = [{exif, JSON}] ++ CreatedProp,
     m_rsc:update(Id, Props, Context).
+
+
+event({postback, {rescan_exif, []}, _, _}, Context) ->
+    F = fun() ->
+                All = z_search:query_([{cat, image}], Context),
+                [exif_augment_rsc(Id, m_media:get(Id, Context), Context) || Id <- All],
+                ok
+        end,
+    spawn(F),
+    z_render:growl(?__("All images are being rescanned for EXIF info. This can take a while.", Context), Context).
+
