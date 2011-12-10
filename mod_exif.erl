@@ -43,7 +43,7 @@ exif_augment_rsc(Id, Medium, Context) ->
            proplists:get_value(filename, Medium)),
     Output = os:cmd("exiftool -j " ++ z_utils:os_escape(FN)),
     [JSON] = z_convert:convert_json(mochijson2:decode(Output)),
-    CreatedProp = case proplists:get_value('DateTimeCreated', JSON) of
+    CreatedProp = case proplists:get_value('CreateDate', JSON) of
                       undefined -> [];
                       B when is_binary(B) ->
                           [Date,Time] = string:tokens(binary_to_list(B), " "),
