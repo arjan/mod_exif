@@ -51,13 +51,14 @@ exif_augment_rsc(Id, Medium, Context) ->
                           [{date_start, z_convert:to_datetime(Y++"-"++M++"-"++D++" "++Time)}]
                   end,
     Props = [{exif, JSON}] ++ CreatedProp,
-    m_rsc:update(Id, Props, Context).
+    m_rsc:update(Id, Props, Context),
+    ok.
 
 
 event({postback, {rescan_exif, []}, _, _}, Context) ->
     F = fun() ->
                 All = z_search:query_([{cat, image}], Context),
-                [exif_augment_rsc(Id, m_media:get(Id, Context), Context) || Id <- All],
+                [catch exif_augment_rsc(Id, m_media:get(Id, Context), Context) || Id <- All],
                 ok
         end,
     spawn(F),
