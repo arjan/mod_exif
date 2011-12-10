@@ -41,19 +41,28 @@ exif_augment_rsc(Id, Medium, Context) ->
     FN = filename:join(
            z_path:media_archive(Context),
            proplists:get_value(filename, Medium)),
-    Output = os:cmd("exif -m " ++ z_utils:os_escape(FN)),
 
-    Exif = [list_to_tuple(string:tokens(L, "\t")) || L <- string:tokens(Output, "\n")],
+    Output = os:cmd("exif -i -m " ++ z_utils:os_escape(FN)),
+    ExifTags = [list_to_tuple(string:tokens(L, "\t")) || L <- string:tokens(Output, "\n")],
 
-    CreatedProp = case proplists:get_value("Date and Time (Original)", Exif) of
+    Output2 = os:cmd("exif -m " ++ z_utils:os_escape(FN)),
+    ExifNames = [list_to_tuple(string:tokens(L, "\t")) || L <- string:tokens(Output2, "\n")],
+    
+    CreatedProp = case proplists:get_value("0x9003", ExifTags) of %% Date and Time (original)
                       undefined -> [];
                       B ->
-                          ?zDebug(FN ++ " created on " ++ B, Context),
+                          ?zDebug(integer_to_list(Id) ++ " created on " ++ B, Context),
                           [Date,Time] = string:tokens(B, " "),
                           [Y,M,D] = string:tokens(Date, ":"),
                           [{date_start, z_convert:to_datetime(Y++"-"++M++"-"++D++" "++Time)}]
                   end,
-
+    
+    Exif = [ [
+              {tag, Tag},
+              {name, Name},
+              {value, Value}]
+             || {{Tag, Value}, {Name, Value}} <- lists:zip(ExifTags, ExifNames)],
+    
     Props = [{exif, Exif}] ++ CreatedProp,
     m_rsc:update(Id, Props, Context),
     ok.
