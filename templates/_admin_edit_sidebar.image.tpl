@@ -1,10 +1,11 @@
 {% extends "admin_edit_widget_std.tpl" %}
 
 {% block widget_title %}
-EXIF information
+{_ EXIF information _}
 {% endblock %}
 
 {% block widget_show_minimized %}true{% endblock %}
+{% block widget_id %}sidebar-exif{% endblock %}
 
 {% block widget_content %}
 {% if id.exif %}
