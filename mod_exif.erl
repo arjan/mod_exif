@@ -49,7 +49,7 @@ exif_augment_rsc(Id, Medium, Context) ->
     ExifNames = [list_to_tuple(string:tokens(L, "\t")) || L <- string:tokens(Output2, "\n")],
     
     CreatedProp = case proplists:get_value("0x9003", ExifTags) of %% Date and Time (original)
-                      undefined -> [];
+                      undefined -> [{date_start, m_rsc:p(Id, created, Context)}];
                       B ->
                           ?zDebug(integer_to_list(Id) ++ " created on " ++ B, Context),
                           [Date,Time] = string:tokens(B, " "),
